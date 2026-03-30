@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:migrate": "npx tsx src/scripts/migrate-app-db.ts",
+    "db:seed": "npx tsx src/scripts/seed-demo-db.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
@@ -16,6 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "next-auth": "^4.24.13",
