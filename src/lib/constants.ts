@@ -1,3 +1,13 @@
+export const MAX_QUERY_ROWS = 500;
+export const QUERY_TIMEOUT_MS = 10000;
+export const SCHEMA_CACHE_TTL_MS = 600000;
+export const CONNECTION_REGISTRY_TTL_MS = 1800000;
+export const MAX_CONVERSATION_HISTORY = 10;
+
+export const RATE_LIMIT_QUERIES = 20;
+export const RATE_LIMIT_CONNECT = 5;
+export const RATE_LIMIT_WINDOW_MS = 60000;
+
 export const GROQ_MODELS = [
   { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B · recommended' },
   { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B · fastest' },

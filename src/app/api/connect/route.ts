@@ -9,17 +9,31 @@ import { formatSchemaForPrompt } from '@/lib/schema/format-schema';
 import { buildSchemaAnalysisPrompt } from '@/lib/llm/prompts';
 import { registrySet } from '@/lib/db/connection-registry';
 import { demoPool } from '@/lib/db/demo-pool';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { CONNECTION_REGISTRY_TTL_MS } from '@/lib/constants';
 import type { LLMProvider, SchemaAnalysis, TableSchema } from '@/types';
 
 const { Pool } = pg;
 
+function sanitizeConnectionString(input: string): string {
+  const sanitized = input
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .replace(/\n/g, '')
+    .replace(/\r/g, '')
+    .trim();
+  
+  if (sanitized.length !== input.length) {
+    throw new Error('Connection string contains invalid characters');
+  }
+  
+  return sanitized;
+}
+
 const connectRequestSchema = z.object({
   type: z.enum(['demo', 'custom']),
   connectionString: z.string().optional(),
-  name: z.string().optional(),
+  name: z.string().max(100, 'Name must be 100 characters or less').optional(),
 });
-
-const TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 function getLLMConfigFromHeaders(headers: Headers): { provider: LLMProvider; apiKey: string; model: string } {
   const apiKey = headers.get('x-llm-key');
@@ -61,7 +75,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { type, connectionString, name } = parseResult.data;
+        const { type, connectionString, name } = parseResult.data;
+
+    const rateLimit = checkRateLimit(userId, 'connect');
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Rate limit exceeded', code: 'RATE_LIMIT_EXCEEDED' },
+        { 
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((rateLimit.retryAfterMs || 0) / 1000)) }
+        }
+      );
+    }
 
     let pool: pg.Pool;
 
@@ -75,7 +100,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (!connectionString.startsWith('postgresql://') && !connectionString.startsWith('postgres://')) {
+      const sanitizedConnectionString = sanitizeConnectionString(connectionString);
+
+      if (!sanitizedConnectionString.startsWith('postgresql://') && !sanitizedConnectionString.startsWith('postgres://')) {
         return NextResponse.json(
           { success: false, error: 'Connection string must start with postgresql:// or postgres://', code: 'INVALID_CONNECTION_STRING' },
           { status: 400 }
@@ -83,7 +110,7 @@ export async function POST(req: NextRequest) {
       }
 
       pool = new Pool({
-        connectionString,
+        connectionString: sanitizedConnectionString,
         max: 1,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
@@ -118,7 +145,7 @@ export async function POST(req: NextRequest) {
       registrySet(userId, connectionId, {
         pool,
         schemaAnalysis,
-        expiresAt: Date.now() + TTL_MS,
+        expiresAt: Date.now() + CONNECTION_REGISTRY_TTL_MS,
       });
 
       console.error('[connect] Connection established', { userId, connectionId, type, name });

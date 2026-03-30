@@ -7,6 +7,8 @@ import { executeQuery, SqlSafetyError } from '@/lib/sql/execute';
 import { getChartRecommendation } from '@/lib/chart/advisor';
 import { formatSchemaForPrompt } from '@/lib/schema/format-schema';
 import { registryGet } from '@/lib/db/connection-registry';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { MAX_CONVERSATION_HISTORY, MAX_QUERY_ROWS, QUERY_TIMEOUT_MS } from '@/lib/constants';
 import type { LLMProvider, ConversationMessage, QueryResult } from '@/types';
 
 interface CacheEntry {
@@ -100,6 +102,17 @@ export async function POST(req: NextRequest) {
 
     const { connectionId, question, conversationHistory } = parseResult.data;
 
+    const rateLimit = checkRateLimit(userId, 'query');
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Rate limit exceeded', code: 'RATE_LIMIT_EXCEEDED' },
+        { 
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((rateLimit.retryAfterMs || 0) / 1000)) }
+        }
+      );
+    }
+
     const cached = registryGet(userId, connectionId);
     if (!cached) {
       return NextResponse.json(
@@ -122,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     let sql: string;
     try {
-      const historyForLLM = (conversationHistory || []).map((msg) => ({
+      const historyForLLM = (conversationHistory || []).slice(-MAX_CONVERSATION_HISTORY).map((msg) => ({
         id: msg.id || crypto.randomUUID(),
         role: msg.role,
         content: msg.content,
@@ -149,8 +162,8 @@ export async function POST(req: NextRequest) {
       queryResult = await executeQuery({
         pool,
         sql,
-        maxRows: 500,
-        timeoutMs: 10000,
+        maxRows: MAX_QUERY_ROWS,
+        timeoutMs: QUERY_TIMEOUT_MS,
       });
     } catch (error) {
       if (error instanceof SqlSafetyError) {
