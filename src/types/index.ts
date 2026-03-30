@@ -1,3 +1,17 @@
+export type LLMProvider = 'anthropic' | 'openai' | 'groq';
+
+export interface LLMConfig {
+  provider: LLMProvider;
+  apiKey: string;
+  model: string;
+}
+
+export const DEFAULT_MODELS: Record<LLMProvider, string> = {
+  anthropic: 'claude-sonnet-4-5',
+  openai: 'gpt-4o',
+  groq: 'llama-3.3-70b-versatile',
+};
+
 export interface DbConnection {
   id: string;
   host: string;
