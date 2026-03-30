@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 import {
   BarChart,
   Bar,
@@ -41,7 +43,7 @@ interface ChartRendererProps {
   onTypeChange?: (type: ChartRecommendation['type']) => void;
 }
 
-export function ChartRenderer({
+function ChartRenderer({
   type,
   columns,
   rows,
@@ -233,3 +235,9 @@ export function ChartRenderer({
     </div>
   );
 }
+
+const memoizedChartRenderer = memo(ChartRenderer, (prev, next) => {
+  return prev.rows === next.rows && prev.type === next.type;
+});
+
+export { memoizedChartRenderer as ChartRenderer };

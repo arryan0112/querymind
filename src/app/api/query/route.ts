@@ -9,6 +9,41 @@ import { formatSchemaForPrompt } from '@/lib/schema/format-schema';
 import { registryGet } from '@/lib/db/connection-registry';
 import type { LLMProvider, ConversationMessage, QueryResult } from '@/types';
 
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+
+const queryCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 30 * 1000;
+const CACHE_CLEANUP_INTERVAL = 5 * 60 * 1000;
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of queryCache.entries()) {
+    if (now - entry.timestamp > CACHE_CLEANUP_INTERVAL) {
+      queryCache.delete(key);
+    }
+  }
+}, CACHE_CLEANUP_INTERVAL);
+
+function getCacheKey(sql: string, connectionId: string): string {
+  return `${connectionId}:${sql}`;
+}
+
+function getCachedResult(key: string): unknown | null {
+  const entry = queryCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+    return entry.data;
+  }
+  queryCache.delete(key);
+  return null;
+}
+
+function setCachedResult(key: string, data: unknown): void {
+  queryCache.set(key, { data, timestamp: Date.now() });
+}
+
 const conversationMessageSchema = z.object({
   id: z.string().optional(),
   role: z.enum(['user', 'assistant']),
@@ -75,6 +110,12 @@ export async function POST(req: NextRequest) {
 
     const { pool, schemaAnalysis } = cached;
     const schemaText = formatSchemaForPrompt(schemaAnalysis.tables);
+
+    const cacheKey = getCacheKey(question, connectionId);
+    const cachedResponse = getCachedResult(cacheKey);
+    if (cachedResponse) {
+      return NextResponse.json(cachedResponse);
+    }
 
     const llmConfig = getLLMConfigFromHeaders(req.headers);
     const llmClient = new LLMClient(llmConfig);
@@ -163,12 +204,16 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json({
+    const response = {
       success: true,
       data: {
         message: assistantMessage,
       },
-    });
+    };
+    
+    setCachedResult(cacheKey, response);
+    
+    return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[query] Error', { error: message });
