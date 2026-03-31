@@ -46,7 +46,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <span className="text-xs text-primary-foreground font-medium">AI</span>
       </div>
 
-      <div className={`flex-1 rounded-lg border ${hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'bg-card'} p-4`}>
+      <div className={`flex-1 min-w-0 rounded-lg border ${hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'bg-card'} p-2 sm:p-4`}>
         {hasError ? (
           <div className="flex items-center gap-2 text-red-600">
             <span className="text-sm">{message.content}</span>
@@ -80,18 +80,20 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   </Button>
                 </div>
                 {sqlExpanded && (
-                  <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-                    <code>{message.sql}</code>
+                  <pre className="bg-muted p-2 sm:p-3 rounded text-xs overflow-x-auto max-w-full">
+                    <code className="break-all">{message.sql}</code>
                   </pre>
                 )}
               </div>
             )}
 
             {message.queryResult && message.chartRecommendation && (
-              <ResultPanel
-                queryResult={message.queryResult}
-                chartRecommendation={message.chartRecommendation}
-              />
+              <div className="overflow-x-auto w-full">
+                <ResultPanel
+                  queryResult={message.queryResult}
+                  chartRecommendation={message.chartRecommendation}
+                />
+              </div>
             )}
 
             {message.queryResult && !message.chartRecommendation && (

@@ -92,3 +92,45 @@ export async function GET(
 export async function OPTIONS() {
   return new NextResponse(null, { status: 200 });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      );
+    }
+
+    const { id: dashboardId } = await params;
+    const userId = session.user.username;
+
+    const result = await appPool.query(
+      'DELETE FROM dashboards WHERE id = $1 AND user_id = $2 RETURNING id',
+      [dashboardId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Dashboard not found', code: 'DASHBOARD_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { deleted: true },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[dashboard/[id]/delete] Error', { error: message });
+    return NextResponse.json(
+      { success: false, error: message, code: 'DASHBOARD_DELETE_FAILED' },
+      { status: 400 }
+    );
+  }
+}

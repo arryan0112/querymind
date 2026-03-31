@@ -33,11 +33,11 @@ const navItems = [
   { href: '/settings', label: 'LLM Settings', icon: SettingsIcon },
 ];
 
-function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
+function SidebarContent() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const { connectionId, schemaAnalysis, schemaPanelOpen, toggleSchemaPanel } = useAppStore();
+  const { connectionId, schemaAnalysis, schemaPanelOpen, toggleSchemaPanel, navSidebarOpen, toggleNavSidebar } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,23 +47,32 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <>
       <div className="p-4 border-b flex items-center justify-between">
-        {!collapsed && <h1 className="text-xl font-bold">QueryMind</h1>}
-        {schemaAnalysis && (
+        <h1 className="text-xl font-bold">QueryMind</h1>
+        <div className="flex items-center gap-1">
+          {schemaAnalysis && (
+            <button
+              onClick={toggleSchemaPanel}
+              className="p-1.5 hover:bg-accent rounded-lg"
+              title={schemaPanelOpen ? 'Hide Schema' : 'Show Schema'}
+            >
+              {schemaPanelOpen ? (
+                <PanelLeftCloseIcon className="size-4" />
+              ) : (
+                <PanelLeftIcon className="size-4" />
+              )}
+            </button>
+          )}
           <button
-            onClick={toggleSchemaPanel}
+            onClick={toggleNavSidebar}
             className="p-1.5 hover:bg-accent rounded-lg"
-            title={schemaPanelOpen ? 'Hide Schema' : 'Show Schema'}
+            title={navSidebarOpen ? 'Hide Menu' : 'Show Menu'}
           >
-            {schemaPanelOpen ? (
-              <PanelLeftCloseIcon className="size-4" />
-            ) : (
-              <PanelLeftIcon className="size-4" />
-            )}
+            <PanelLeftCloseIcon className="size-4" />
           </button>
-        )}
+        </div>
       </div>
 
-      <nav className={`flex-1 p-4 ${collapsed ? 'px-2' : ''} space-y-1`}>
+      <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -75,65 +84,55 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-accent'
-              } ${collapsed ? 'justify-center' : ''}`}
-              title={collapsed ? item.label : undefined}
+              }`}
             >
               <Icon className="size-4" />
-              {!collapsed && item.label}
+              {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className={`p-4 border-t space-y-3 ${collapsed ? 'px-2' : ''}`}>
+      <div className="p-4 border-t space-y-3">
         {mounted && (
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent w-full ${
-              collapsed ? 'justify-center' : ''
-            }`}
-            title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent w-full"
           >
             {theme === 'dark' ? (
               <SunIcon className="size-4" />
             ) : (
               <MoonIcon className="size-4" />
             )}
-            {!collapsed && (theme === 'dark' ? 'Light mode' : 'Dark mode')}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
         )}
 
         {connectionId && schemaAnalysis && (
-          <div className={`flex items-center gap-2 px-3 ${collapsed ? 'justify-center' : ''}`}>
+          <div className="flex items-center gap-2 px-3">
             <span className="w-2 h-2 rounded-full bg-green-500" />
-            {!collapsed && (
-              <span className="text-xs text-muted-foreground truncate">
-                {schemaAnalysis.tables.length} tables
-              </span>
-            )}
+            <span className="text-xs text-muted-foreground truncate">
+              {schemaAnalysis.tables.length} tables
+            </span>
           </div>
         )}
 
-        <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium shrink-0">
             {session?.user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
-          {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {session?.user?.email}
-                </p>
-              </div>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="p-1 hover:bg-accent rounded"
-                title="Sign out"
-              >
-                <LogOutIcon className="size-4 text-muted-foreground" />
-              </button>
-            </>
-          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">
+              {session?.user?.email}
+            </p>
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="p-1 hover:bg-accent rounded"
+            title="Sign out"
+          >
+            <LogOutIcon className="size-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
     </>
@@ -146,9 +145,8 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { status } = useSession();
-  const { llmConfig, connectionId, schemaPanelOpen, schemaAnalysis } = useAppStore();
+  const { llmConfig, connectionId, schemaPanelOpen, schemaAnalysis, navSidebarOpen, toggleNavSidebar, toggleSchemaPanel } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
@@ -173,15 +171,39 @@ export default function AppLayout({
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className={`hidden md:flex border-r bg-card flex-col ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
-        <SidebarContent collapsed={sidebarCollapsed} />
-      </aside>
+      {navSidebarOpen && (
+        <aside className="hidden md:flex border-r bg-card flex-col w-60">
+          <SidebarContent />
+        </aside>
+      )}
+
+      {/* Toggle button for nav sidebar when closed */}
+      {!navSidebarOpen && (
+        <button
+          onClick={toggleNavSidebar}
+          className="hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 bg-card border border-r-0 p-2 rounded-r-lg shadow hover:bg-accent"
+          title="Show Menu"
+        >
+          <PanelLeftIcon className="size-4" />
+        </button>
+      )}
 
       {/* Schema Panel - collapsible on right of sidebar */}
       {schemaPanelOpen && schemaAnalysis && (
         <aside className="hidden md:block w-72 border-r bg-card overflow-y-auto">
           <SchemaExplorer />
         </aside>
+      )}
+
+      {/* Toggle button for schema panel when closed */}
+      {!schemaPanelOpen && schemaAnalysis && (
+        <button
+          onClick={toggleSchemaPanel}
+          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 bg-card border border-l-0 p-2 rounded-l-lg shadow hover:bg-accent"
+          title="Show Schema"
+        >
+          <PanelLeftCloseIcon className="size-4 rotate(180deg)" />
+        </button>
       )}
 
       {/* Mobile sidebar */}

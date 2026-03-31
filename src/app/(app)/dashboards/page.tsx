@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PlusIcon, ShareIcon, BarChartIcon, LineChartIcon, PieChartIcon, TableIcon, Loader2Icon } from 'lucide-react';
+import { PlusIcon, ShareIcon, BarChartIcon, LineChartIcon, PieChartIcon, TableIcon, Loader2Icon, TrashIcon, EditIcon } from 'lucide-react';
 
 interface Dashboard {
   id: string;
@@ -103,6 +103,25 @@ export default function DashboardsPage() {
     }
   };
 
+  const handleDeleteDashboard = async (dashboardId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this dashboard?')) return;
+    
+    try {
+      const res = await fetch(`/api/dashboard/${dashboardId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Dashboard deleted');
+        fetchDashboards();
+      } else {
+        toast.error(data.error || 'Failed to delete');
+      }
+    } catch {
+      toast.error('Failed to delete');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 p-8">
@@ -158,12 +177,26 @@ export default function DashboardsPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dashboards.map((dashboard) => (
               <Link key={dashboard.id} href={`/dashboards/${dashboard.id}`}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full group">
                   <CardHeader>
-                    <CardTitle className="text-lg">{dashboard.name}</CardTitle>
-                    {dashboard.description && (
-                      <CardDescription>{dashboard.description}</CardDescription>
-                    )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg truncate">{dashboard.name}</CardTitle>
+                        {dashboard.description && (
+                          <CardDescription className="truncate">{dashboard.description}</CardDescription>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => handleDeleteDashboard(dashboard.id, e)}
+                        >
+                          <TrashIcon className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
@@ -178,7 +211,8 @@ export default function DashboardsPage() {
                         </span>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-7 w-7"
                           onClick={(e) => handleShare(dashboard.id, e)}
                         >
                           <ShareIcon className="h-4 w-4" />

@@ -85,6 +85,9 @@ export interface DashboardWidget {
   chartType: ChartRecommendation['type'];
   chartConfig: Record<string, unknown>;
   position: { x: number; y: number; w: number; h: number };
+  columns?: string[];
+  rows?: Record<string, unknown>[];
+  createdAt?: string;
 }
 
 export interface Dashboard {

@@ -76,8 +76,8 @@ export function TableTab({ columns, rows }: TableTabProps) {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between p-4 border-b">
+    <div className="w-full overflow-hidden">
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b">
         <p className="text-sm text-muted-foreground">
           {rows.length.toLocaleString()} rows
         </p>
@@ -87,7 +87,7 @@ export function TableTab({ columns, rows }: TableTabProps) {
         </Button>
       </div>
 
-      <div className="overflow-auto max-h-96">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -95,7 +95,7 @@ export function TableTab({ columns, rows }: TableTabProps) {
                 <TableHead key={col}>
                   <button
                     onClick={() => handleSort(col)}
-                    className="flex items-center gap-1 hover:text-foreground"
+                    className="flex items-center gap-1 hover:text-foreground whitespace-nowrap"
                   >
                     <span className="font-mono text-xs">{col}</span>
                     {sortColumn === col && (
@@ -114,7 +114,7 @@ export function TableTab({ columns, rows }: TableTabProps) {
             {displayRows.map((row, i) => (
               <TableRow key={i}>
                 {columns.map((col) => (
-                  <TableCell key={col} className="font-mono text-xs">
+                  <TableCell key={col} className="font-mono text-xs whitespace-nowrap">
                     {row[col] === null ? (
                       <span className="text-muted-foreground">NULL</span>
                     ) : (
@@ -129,7 +129,7 @@ export function TableTab({ columns, rows }: TableTabProps) {
       </div>
 
       {rows.length > 100 && !showAll && (
-        <div className="p-4 border-t text-center">
+        <div className="p-2 sm:p-4 border-t text-center">
           <Button variant="outline" onClick={() => setShowAll(true)}>
             Show all {rows.length.toLocaleString()} rows
           </Button>

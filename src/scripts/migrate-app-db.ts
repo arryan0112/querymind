@@ -39,7 +39,7 @@ async function migrate() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS dashboards (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL,
         name TEXT NOT NULL,
         description TEXT,
         widgets JSONB NOT NULL DEFAULT '[]',
@@ -53,7 +53,7 @@ async function migrate() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS saved_connections (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL,
         name TEXT NOT NULL,
         connection_string TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()

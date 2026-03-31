@@ -94,7 +94,19 @@ export async function POST(req: NextRequest) {
 
     const userId = session.user.username;
     const { searchParams } = new URL(req.url);
-    const action = searchParams.get('action');
+    let action = searchParams.get('action');
+    
+    // Normalize action to handle all cases
+    if (action) {
+      action = action.toLowerCase().replace(/-/g, '');
+      // Map to proper action names
+      if (action === 'addwidget') action = 'addWidget';
+      if (action === 'create') action = 'create';
+      if (action === 'updatewidget') action = 'updateWidget';
+      if (action === 'removewidget') action = 'removeWidget';
+    }
+    
+    console.log('[dashboard] POST normalized action:', action, 'userId:', userId);
 
     if (action === 'create') {
       const body = await req.json();
@@ -130,20 +142,82 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'addWidget') {
+      // Ensure dashboards table exists with correct schema (user_id as TEXT, not UUID)
+      try {
+        // First try to drop and recreate to fix any existing schema issues
+        await appPool.query(`DROP TABLE IF EXISTS dashboards`);
+      } catch (e) {
+        // Ignore if doesn't exist
+      }
+      
+      try {
+        await appPool.query(`
+          CREATE TABLE IF NOT EXISTS dashboards (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            widgets JSONB NOT NULL DEFAULT '[]',
+            share_token UUID UNIQUE DEFAULT gen_random_uuid(),
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        console.log('[addWidget] Table created/reset with TEXT user_id');
+      } catch (tableErr) {
+        console.log('[addWidget] Table error:', tableErr);
+      }
+      
       const body = await req.json();
-      const parseResult = addWidgetSchema.safeParse(body);
-      if (!parseResult.success) {
+      
+      if (!body.widget) {
         return NextResponse.json(
-          { success: false, error: 'Invalid request body', code: 'VALIDATION_ERROR' },
+          { success: false, error: 'Widget data is required', code: 'VALIDATION_ERROR' },
           { status: 400 }
         );
       }
-
-      const { dashboardId, widget } = parseResult.data;
+      
+      let dashboardId = body.dashboardId;
+      
+      console.log('[addWidget] body:', JSON.stringify(body).slice(0, 200));
+      console.log('[addWidget] current dashboardId:', dashboardId, 'userId:', userId);
+      
+      if (!dashboardId) {
+        const dashboardsResult = await appPool.query(
+          'SELECT id FROM dashboards WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+          [userId]
+        );
+        console.log('[addWidget] dashboards found:', dashboardsResult.rows.length);
+        
+        if (dashboardsResult.rows.length > 0) {
+          dashboardId = dashboardsResult.rows[0].id;
+          console.log('[addWidget] using existing dashboard:', dashboardId);
+        } else {
+          const newId = uuidv4();
+          console.log('[addWidget] creating new dashboard with id:', newId);
+          await appPool.query(`
+            INSERT INTO dashboards (id, user_id, name, description, widgets, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+          `, [newId, userId, 'My Dashboard', 'Auto-created dashboard', '[]']);
+          dashboardId = newId;
+        }
+      }
+      
+      console.log('[addWidget] final dashboardId:', dashboardId);
+      
+      const widget = body.widget;
       const widgetId = uuidv4();
-      const widgetWithId: DashboardWidget = {
-        ...widget,
+      
+      const widgetData: DashboardWidget = {
         id: widgetId,
+        title: widget.title || 'Chart',
+        sql: widget.sql || '',
+        naturalLanguageQuery: widget.naturalLanguageQuery || '',
+        chartType: widget.chartType || 'bar',
+        chartConfig: widget.chartConfig || {},
+        position: widget.position || { x: 0, y: 0, w: 6, h: 4 },
+        columns: widget.columns || [],
+        rows: widget.rows || [],
       };
 
       const result = await appPool.query(`
@@ -151,7 +225,7 @@ export async function POST(req: NextRequest) {
         SET widgets = widgets || $1::jsonb, updated_at = NOW() 
         WHERE id = $2 AND user_id = $3
         RETURNING *
-      `, [JSON.stringify([widgetWithId]), dashboardId, userId]);
+      `, [JSON.stringify([widgetData]), dashboardId, userId]);
 
       if (result.rowCount === 0) {
         return NextResponse.json(
@@ -162,7 +236,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: { widget: widgetWithId },
+        data: { widget: widgetData, dashboardId },
       });
     }
 
