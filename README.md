@@ -1,146 +1,108 @@
 # QueryMind
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js">
+  <img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript">
+  <img src="https://img.shields.io/badge/PostgreSQL-15+-blue" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+</p>
 
-QueryMind is a conversational BI platform that lets you ask questions about your data in plain English and instantly get visualizations.
+QueryMind is a **conversational BI platform** that lets you ask questions about your data in plain English and instantly get visualizations. It translates natural language queries into SQL, executes them against your database, and automatically generates appropriate charts.
 
-## What it does
+## ✨ Features
 
-QueryMind uses AI to translate natural language questions into SQL queries, executes them against your database, and automatically generates appropriate visualizations. Key features include:
+- **Natural Language to SQL** — Ask questions in plain English and get instant SQL queries
+- **Demo Database** — Try the platform with a pre-seeded e-commerce dataset (products, customers, orders, reviews)
+- **Auto-Visualizations** — Automatically generates charts based on your data structure
+- **Dashboards** — Save charts to create customizable dashboards
+- **Shareable Links** — Generate public links to share dashboards with others
+- **Responsive Design** — Works beautifully on any screen size
+- **Dark/Light Mode** — Toggle between themes
 
-- **Text-to-SQL**: Ask questions in plain English and get SQL queries automatically
-- **Demo Database**: Try the platform with a pre-seeded e-commerce dataset
-- **Schema Analysis**: Automatic database introspection with LLM-generated summaries
-- **Auto Charts**: Intelligent chart type recommendations based on your data
-- **Dashboards**: Save visualizations and arrange them in shareable dashboards
-- **Sharing**: Generate public links to share dashboards with others
-
-## Live demo
-
-Try the live demo at: **https://your-domain.vercel.app**
-
-Credentials:
-- Username: `demo`
-- Password: `demo1234`
-
-## Screenshots
-
-![Chat interface](./screenshots/chat.png)
-
-*Note: Add screenshots before deployment.*
-
-## Tech stack
-
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| Framework | Next.js 16 | Full-stack React framework |
-| Language | TypeScript | Type safety |
-| Database | PostgreSQL | Data storage |
-| ORM | pg | PostgreSQL client |
-| Auth | NextAuth.js | Authentication |
-| AI | Anthropic/OpenAI/Groq | SQL generation |
-| Charts | Recharts | Data visualization |
-| UI | Tailwind + shadcn/ui | Styling |
-| State | Zustand | Client state |
-
-## Quick start (local development)
+## 🚀 Quick Start
 
 ```bash
+# Clone the repository
 git clone https://github.com/arryan0112/querymind.git
-cd queryMind
+cd querymind
+
+# Install dependencies
 npm install
+
+# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your values (see Configuration section)
+
+# Run database migrations
 npm run db:migrate
+
+# Seed demo data (optional)
 npm run db:seed
+
+# Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Configuration
+## 🔐 Demo Credentials
+
+- **Username:** `demo`
+- **Password:** `demo1234`
+
+## 💬 Example Queries
+
+Try these queries with the demo database:
+
+| Category | Example Query |
+|----------|---------------|
+| Products | "top 5 products" |
+| Products | "top 7 most sold products" |
+| Products | "products by revenue" |
+| Customers | "top 3 customers" |
+| Customers | "best customers by spending" |
+| Revenue | "monthly revenue" |
+| Revenue | "revenue by category" |
+| Orders | "recent orders" |
+| Orders | "orders by status" |
+
+## ⚙️ Configuration
 
 Create a `.env.local` file with the following variables:
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXTAUTH_SECRET` | Secret for NextAuth.js encryption | Yes |
-| `NEXTAUTH_URL` | Base URL for auth (e.g., http://localhost:3000) | Yes |
-| `APP_DATABASE_URL` | PostgreSQL connection string for app data (users, dashboards) | Yes |
-| `DEMO_DATABASE_URL` | PostgreSQL connection string for demo e-commerce data | Yes |
-| `DEMO_USERNAME` | Username for demo login | Yes |
-| `DEMO_PASSWORD` | Password for demo login | Yes |
+| Variable | Description |
+|----------|-------------|
+| `NEXTAUTH_SECRET` | Secret for NextAuth.js encryption |
+| `NEXTAUTH_URL` | Base URL (e.g., http://localhost:3000) |
+| `APP_DATABASE_URL` | PostgreSQL connection for app data (users, dashboards) |
+| `DEMO_DATABASE_URL` | PostgreSQL connection for demo e-commerce data |
+| `DEMO_USERNAME` | Demo login username |
+| `DEMO_PASSWORD` | Demo login password |
 
-## Architecture
+## 🛠️ Tech Stack
 
-### Schema Introspection Flow
-1. User connects to a database
-2. Server introspects schema: tables, columns, foreign keys, row counts, sample values
-3. Schema is cached in memory (30 min TTL) for fast queries
-4. LLM generates a human-readable summary of the database
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Database | PostgreSQL |
+| Auth | NextAuth.js |
+| AI | Groq / OpenAI / Anthropic |
+| Charts | Recharts |
+| UI | Tailwind CSS + shadcn/ui |
+| State | Zustand |
 
-### SQL Generation Pipeline
-1. User asks a question in natural language
-2. System builds a prompt with: schema, conversation history, current question
-3. LLM generates a SELECT query
-4. Query is validated (safety check + SELECT-only)
-5. Query executes against user's database with row/timeout limits
-6. Results are returned with auto-generated chart recommendations
+## 🔒 Security
 
-### Safety Mechanisms
-- **SQL Validation**: Only SELECT queries allowed (no DROP, DELETE, UPDATE, etc.)
-- **Parameterization**: All user input passed via parameterized queries
-- **Row Limits**: Max 500 rows per query (prevents huge result sets)
-- **Timeout**: 10 second query timeout
-- **API Key Handling**: Keys stored client-side, never sent to our servers
+- **SQL Safety** — Only SELECT queries allowed, no DDL/DML
+- **Parameterized Queries** — Prevents SQL injection
+- **Row Limits** — Maximum 500 rows per query
+- **Query Timeout** — 10 second timeout prevents long-running queries
+- **API Keys** — Stored client-side, never sent to server
 
-### Connection Registry
-- In-memory Map keyed by `${userId}:${connectionId}`
-- 30-minute TTL per connection
-- Note: Production should use Redis for persistence across restarts
+## 📄 License
 
-## Example queries
+MIT License — feel free to use this project for any purpose.
 
-Try these queries against the demo database:
+---
 
-1. "What were the top 5 products by revenue last month?"
-2. "Show me order count by day for the past 30 days"
-3. "Which customers have placed more than 10 orders but never left a review?"
-4. "Compare revenue by category this quarter vs last quarter"
-5. "What is the average order value by customer segment?"
-
-## Security
-
-- **API Keys**: Never stored server-side, passed directly to AI providers
-- **SQL Safety**: All queries validated before execution, no DDL/DML allowed
-- **Parameterized Queries**: Prevents SQL injection throughout
-- **Row Limits**: Enforced 500-row maximum
-- **Rate Limiting**: 20 queries/minute per user (in-memory, production should use Redis)
-
-## Known Limitations
-
-- **Connection Registry**: In-memory storage resets on server restart (production: use Redis)
-- **Rate Limiting**: In-memory implementation (production: use Redis)
-- **Database Support**: PostgreSQL only (currently)
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Fork this repository
-2. Import in Vercel
-3. Configure environment variables
-4. Deploy
-
-### Docker
-
-```bash
-docker build -t querymind .
-docker run -p 3000:3000 -e .env.local querymind
-```
-
-## License
-
-MIT
+Built with ❤️ using Next.js and PostgreSQL
