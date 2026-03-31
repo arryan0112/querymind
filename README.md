@@ -1,15 +1,8 @@
 # QueryMind
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js">
-  <img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript">
-  <img src="https://img.shields.io/badge/PostgreSQL-15+-blue" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-</p>
+QueryMind is a conversational BI platform that lets you ask questions about your data in plain English and instantly get visualizations. It translates natural language queries into SQL, executes them against your database, and automatically generates appropriate charts.
 
-QueryMind is a **conversational BI platform** that lets you ask questions about your data in plain English and instantly get visualizations. It translates natural language queries into SQL, executes them against your database, and automatically generates appropriate charts.
-
-## ✨ Features
+## Features
 
 - **Natural Language to SQL** — Ask questions in plain English and get instant SQL queries
 - **Demo Database** — Try the platform with a pre-seeded e-commerce dataset (products, customers, orders, reviews)
@@ -19,7 +12,7 @@ QueryMind is a **conversational BI platform** that lets you ask questions about 
 - **Responsive Design** — Works beautifully on any screen size
 - **Dark/Light Mode** — Toggle between themes
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repository
@@ -44,12 +37,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🔐 Demo Credentials
+## Demo Credentials
 
-- **Username:** `demo`
-- **Password:** `demo1234`
+- **Username:** demo
+- **Password:** demo1234
 
-## 💬 Example Queries
+## Example Queries
 
 Try these queries with the demo database:
 
@@ -65,7 +58,7 @@ Try these queries with the demo database:
 | Orders | "recent orders" |
 | Orders | "orders by status" |
 
-## ⚙️ Configuration
+## Configuration
 
 Create a `.env.local` file with the following variables:
 
@@ -78,7 +71,7 @@ Create a `.env.local` file with the following variables:
 | `DEMO_USERNAME` | Demo login username |
 | `DEMO_PASSWORD` | Demo login password |
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Category | Technology |
 |----------|------------|
@@ -91,7 +84,7 @@ Create a `.env.local` file with the following variables:
 | UI | Tailwind CSS + shadcn/ui |
 | State | Zustand |
 
-## 🔒 Security
+## Security
 
 - **SQL Safety** — Only SELECT queries allowed, no DDL/DML
 - **Parameterized Queries** — Prevents SQL injection
@@ -99,10 +92,6 @@ Create a `.env.local` file with the following variables:
 - **Query Timeout** — 10 second timeout prevents long-running queries
 - **API Keys** — Stored client-side, never sent to server
 
-## 📄 License
+## License
 
-MIT License — feel free to use this project for any purpose.
-
----
-
-Built with ❤️ using Next.js and PostgreSQL
+MIT License
