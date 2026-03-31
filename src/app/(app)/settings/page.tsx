@@ -32,7 +32,7 @@ export default function SettingsPage() {
 
   const fetchConnections = async () => {
     try {
-      const res = await fetch('/api/connections');
+      const res = await fetch('/api/connections', { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setConnections(data.data.connections);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { appPool } from '@/lib/db/app-pool';
@@ -40,15 +41,15 @@ const removeWidgetSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.email;
+    const userId = session.user.username;
 
     const result = await appPool.query(`
       SELECT d.id, d.name, d.description, d.created_at, d.updated_at, 
@@ -83,15 +84,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.email;
+    const userId = session.user.username;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 

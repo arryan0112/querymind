@@ -14,10 +14,9 @@ function isDateColumn(values: unknown[]): boolean {
   const sample = values[0];
   if (sample instanceof Date) return true;
   if (typeof sample === 'string') {
-    const dateMatch = sample.match(/^\d{4}-\d{2}-\d{2}/);
-    if (dateMatch) return true;
-    const parsed = new Date(sample);
-    if (!isNaN(parsed.getTime())) return true;
+    if (sample.match(/^\d{4}-\d{2}-\d{2}/)) return true;
+    if (sample.match(/^\d{4}-\d{2}-\d{2}T/)) return true;
+    if (sample.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) return true;
   }
   return false;
 }

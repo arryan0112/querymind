@@ -13,10 +13,11 @@ import {
   SunIcon,
   MenuIcon,
   XIcon,
+  SettingsIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useAppStore } from '@/store/app-store';
 import { OnboardingModal } from '@/components/OnboardingModal';
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/chat', label: 'Chat', icon: MessageSquareIcon },
   { href: '/dashboards', label: 'Dashboards', icon: LayoutDashboardIcon },
   { href: '/connect', label: 'Connections', icon: DatabaseIcon },
+  { href: '/settings', label: 'LLM Settings', icon: SettingsIcon },
 ];
 
 function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
@@ -165,6 +167,7 @@ export default function AppLayout({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
+          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
           <SidebarContent />
         </SheetContent>
       </Sheet>

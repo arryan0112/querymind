@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import pg from 'pg';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +9,7 @@ import { introspectSchema } from '@/lib/schema/introspect';
 import { formatSchemaForPrompt } from '@/lib/schema/format-schema';
 import { buildSchemaAnalysisPrompt } from '@/lib/llm/prompts';
 import { registrySet } from '@/lib/db/connection-registry';
-import { demoPool } from '@/lib/db/demo-pool';
+import { demoPool, demoSchema } from '@/lib/db/demo-pool';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { CONNECTION_REGISTRY_TTL_MS } from '@/lib/constants';
 import type { LLMProvider, SchemaAnalysis, TableSchema } from '@/types';
@@ -56,15 +57,15 @@ function getLLMConfigFromHeaders(headers: Headers): { provider: LLMProvider; api
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.email;
+    const userId = session.user.username;
 
     const body = await req.json();
     const parseResult = connectRequestSchema.safeParse(body);
@@ -125,20 +126,26 @@ export async function POST(req: NextRequest) {
         client.release();
       }
 
-      const tables: TableSchema[] = await introspectSchema(pool);
-      const schemaText = formatSchemaForPrompt(tables);
+      let schemaAnalysis: SchemaAnalysis;
 
-      const llmConfig = getLLMConfigFromHeaders(req.headers);
-      const llmClient = new LLMClient(llmConfig);
-      const messages = buildSchemaAnalysisPrompt(schemaText);
-      const llmResponse = await llmClient.complete(messages);
+      if (type === 'demo') {
+        schemaAnalysis = demoSchema;
+      } else {
+        const tables: TableSchema[] = await introspectSchema(pool);
+        const schemaText = formatSchemaForPrompt(tables);
 
-      const schemaAnalysis: SchemaAnalysis = {
-        tables,
-        relationships: [],
-        summary: llmResponse,
-        analyzedAt: new Date().toISOString(),
-      };
+        const llmConfig = getLLMConfigFromHeaders(req.headers);
+        const llmClient = new LLMClient(llmConfig);
+        const messages = buildSchemaAnalysisPrompt(schemaText);
+        const llmResponse = await llmClient.complete(messages);
+
+        schemaAnalysis = {
+          tables,
+          relationships: [],
+          summary: llmResponse,
+          analyzedAt: new Date().toISOString(),
+        };
+      }
 
       const connectionId = uuidv4();
 

@@ -61,6 +61,7 @@ export default function DashboardDetailPage({ params }: DashboardDetailProps) {
       try {
         const res = await fetch('/api/query', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             connectionId: localStorage.getItem('connectionId'),

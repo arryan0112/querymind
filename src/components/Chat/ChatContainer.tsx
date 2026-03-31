@@ -31,7 +31,7 @@ export function ChatContainer({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div className="flex-1 overflow-auto p-4 space-y-4 max-w-5xl mx-auto w-full">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="text-center space-y-4 max-w-md">
@@ -59,7 +59,7 @@ export function ChatContainer({
             ))}
             {loading && (
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
                   <span className="text-xs text-primary-foreground font-medium">AI</span>
                 </div>
                 <div className="bg-muted rounded-lg px-4 py-3">
@@ -75,14 +75,16 @@ export function ChatContainer({
       </div>
 
       <div className="border-t p-4">
-        <QueryInput
-          value={input}
-          onChange={onInputChange}
-          onSend={onSend}
-          onKeyDown={onKeyDown}
-          disabled={loading}
-          onClear={clearConversation}
-        />
+        <div className="max-w-5xl mx-auto">
+          <QueryInput
+            value={input}
+            onChange={onInputChange}
+            onSend={onSend}
+            onKeyDown={onKeyDown}
+            disabled={loading}
+            onClear={clearConversation}
+          />
+        </div>
       </div>
     </div>
   );

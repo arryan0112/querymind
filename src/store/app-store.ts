@@ -58,6 +58,8 @@ export const useAppStore = create<AppState>()(
       name: 'querymind-storage',
       partialize: (state) => ({
         llmConfig: state.llmConfig,
+        connectionId: state.connectionId,
+        schemaAnalysis: state.schemaAnalysis,
       }),
     }
   )

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { LLMClient } from '@/lib/llm/client';
 import { generateSQL } from '@/lib/sql/generate';
+import { generateDemoSQL } from '@/lib/sql/demo-generator';
 import { executeQuery, SqlSafetyError } from '@/lib/sql/execute';
-import { getChartRecommendation } from '@/lib/chart/advisor';
+import { getChartRecommendation, inferChartType } from '@/lib/chart/advisor';
 import { formatSchemaForPrompt } from '@/lib/schema/format-schema';
 import { registryGet } from '@/lib/db/connection-registry';
 import { checkRateLimit } from '@/lib/rate-limiter';
@@ -81,15 +83,15 @@ function getLLMConfigFromHeaders(headers: Headers): { provider: LLMProvider; api
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.email;
+    const userId = session.user.username;
 
     const body = await req.json();
     const parseResult = queryRequestSchema.safeParse(body);
@@ -130,31 +132,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(cachedResponse);
     }
 
-    const llmConfig = getLLMConfigFromHeaders(req.headers);
-    const llmClient = new LLMClient(llmConfig);
-
     let sql: string;
-    try {
-      const historyForLLM = (conversationHistory || []).slice(-MAX_CONVERSATION_HISTORY).map((msg) => ({
-        id: msg.id || crypto.randomUUID(),
-        role: msg.role,
-        content: msg.content,
-        sql: msg.sql,
-        timestamp: msg.timestamp || new Date().toISOString(),
-      }));
-      sql = await generateSQL({
-        llmClient,
-        schemaText,
-        userQuestion: question,
-        conversationHistory: historyForLLM,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[query] SQL generation error', { error: message });
-      return NextResponse.json(
-        { success: false, error: message, code: 'LLM_ERROR' },
-        { status: 502 }
-      );
+    let llmClient: LLMClient | null = null;
+    
+    const demoSQL = generateDemoSQL(question);
+    if (demoSQL) {
+      sql = demoSQL;
+    } else {
+      const llmConfig = getLLMConfigFromHeaders(req.headers);
+      llmClient = new LLMClient(llmConfig);
+
+      try {
+        const historyForLLM = (conversationHistory || []).slice(-MAX_CONVERSATION_HISTORY).map((msg) => ({
+          id: msg.id || crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content,
+          sql: msg.sql,
+          timestamp: msg.timestamp || new Date().toISOString(),
+        }));
+        sql = await generateSQL({
+          llmClient,
+          schemaText,
+          userQuestion: question,
+          conversationHistory: historyForLLM,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[query] SQL generation error', { error: message });
+        return NextResponse.json(
+          { success: false, error: message + '. Try asking about orders, products, customers, sales, or revenue.', code: 'LLM_ERROR' },
+          { status: 502 }
+        );
+      }
     }
 
     let queryResult: QueryResult;
@@ -188,12 +197,16 @@ export async function POST(req: NextRequest) {
 
     let chartRecommendation;
     try {
-      chartRecommendation = await getChartRecommendation({
-        llmClient,
-        queryResult,
-        userQuestion: question,
-        sql,
-      });
+      if (llmClient) {
+        chartRecommendation = await getChartRecommendation({
+          llmClient,
+          queryResult,
+          userQuestion: question,
+          sql,
+        });
+      } else {
+        chartRecommendation = inferChartType(queryResult.columns, queryResult.rows);
+      }
     } catch (error) {
       console.error('[query] Chart recommendation error', { error: error instanceof Error ? error.message : 'Unknown' });
       chartRecommendation = {

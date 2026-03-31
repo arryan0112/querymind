@@ -42,7 +42,7 @@ export default function DashboardsPage() {
 
   const fetchDashboards = async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch('/api/dashboard', { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setDashboards(data.data.dashboards);
@@ -65,6 +65,7 @@ export default function DashboardsPage() {
     try {
       const res = await fetch('/api/dashboard?action=create', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName, description: newDescription }),
       });

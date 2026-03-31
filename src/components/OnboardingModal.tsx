@@ -62,6 +62,7 @@ export function OnboardingModal({ open, onOpenChange }: OnboardingModalProps) {
     try {
       const res = await fetch('/api/connect', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'x-llm-key': llmConfig.apiKey,

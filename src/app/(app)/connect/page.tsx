@@ -55,6 +55,7 @@ export default function ConnectPage() {
     try {
       const res = await fetch('/api/validate-connection', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -95,6 +96,7 @@ export default function ConnectPage() {
     try {
       const res = await fetch('/api/connect', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'x-llm-key': llmConfig.apiKey,
@@ -137,6 +139,7 @@ export default function ConnectPage() {
     try {
       const res = await fetch('/api/connect', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'x-llm-key': llmConfig.apiKey,

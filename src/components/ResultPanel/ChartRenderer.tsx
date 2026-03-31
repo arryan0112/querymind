@@ -67,12 +67,57 @@ function ChartRenderer({
     'grouped_bar',
   ];
 
+  const formatDateLabel = (val: unknown): string => {
+    if (val instanceof Date) {
+      return val.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}T/)) {
+      const date = new Date(val);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    }
+    return String(val);
+  };
+
+  const getLabelColumn = () => {
+    const dateCol = columns.find((col) => {
+      const sample = rows[0]?.[col];
+      return (
+        sample instanceof Date ||
+        (typeof sample === 'string' && (sample.match(/^\d{4}-\d{2}-\d{2}/) || sample.match(/^\d{4}-\d{2}-\d{2}T/) || sample.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)))
+      );
+    });
+    if (dateCol) return dateCol;
+    
+    const nameColumns = ['name', 'title', 'label', 'product_name', 'category', 'segment', 'status', 'country', 'state', 'city', 'first_name', 'last_name', 'email'];
+    for (const col of nameColumns) {
+      if (columns.includes(col)) return col;
+    }
+    
+    return columns[0];
+  };
+
+  const isDateColumn = (col: string): boolean => {
+    const sample = rows[0]?.[col];
+    if (sample instanceof Date) return true;
+    if (typeof sample === 'string') {
+      return !!(sample.match(/^\d{4}-\d{2}-\d{2}/) || sample.match(/^\d{4}-\d{2}-\d{2}T/) || sample.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/));
+    }
+    return false;
+  };
+
   const getData = () => {
-    return rows.map((row) => {
-      const obj: Record<string, unknown> = {};
+    const labelCol = getLabelColumn();
+    const isDate = isDateColumn(labelCol);
+    return rows.map((row, idx) => {
+      const obj: Record<string, unknown> = { _index: idx };
       columns.forEach((col) => {
         const val = row[col];
-        if (typeof val === 'number') {
+        if (col === labelCol) {
+          obj.label = isDate ? formatDateLabel(val) : String(val);
+          obj[labelCol] = val;
+        } else if (typeof val === 'number') {
           obj[col] = val;
         } else if (typeof val === 'string' && val !== '' && !isNaN(Number(val))) {
           obj[col] = Number(val);
@@ -85,16 +130,7 @@ function ChartRenderer({
   };
 
   const data = getData();
-
-  const getXAxisColumn = () => {
-    return columns.find((col) => {
-      const sample = rows[0]?.[col];
-      return (
-        sample instanceof Date ||
-        (typeof sample === 'string' && sample.match(/^\d{4}-\d{2}-\d{2}/))
-      );
-    });
-  };
+  const labelCol = getLabelColumn();
 
   const getNumericColumns = () => {
     return columns.filter((col) => {
@@ -106,7 +142,7 @@ function ChartRenderer({
   };
 
   const renderChart = () => {
-    const xCol = getXAxisColumn() || columns[0];
+    const xCol = labelCol;
     const numericCols = getNumericColumns();
 
     switch (type) {
@@ -116,14 +152,17 @@ function ChartRenderer({
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xCol} tick={{ fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={80} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip 
+                labelFormatter={(_label, payload) => String(payload?.[0]?.payload?.label || '')}
+              />
               <Legend />
               {numericCols.slice(0, type === 'grouped_bar' ? 5 : 1).map((col, i) => (
                 <Bar
                   key={col}
                   dataKey={col}
+                  name={col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   fill={COLORS[i % COLORS.length]}
                 />
               ))}
@@ -139,15 +178,18 @@ function ChartRenderer({
           <ResponsiveContainer width="100%" height={320}>
             <ChartComponent data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xCol} tick={{ fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip 
+                labelFormatter={(_label, payload) => String(payload?.[0]?.payload?.label || '')}
+              />
               <Legend />
               {numericCols.slice(0, 3).map((col, i) => (
                 <DataComponent
                   key={col}
                   type="monotone"
                   dataKey={col}
+                  name={col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   stroke={COLORS[i % COLORS.length]}
                   fill={type === 'area' ? COLORS[i % COLORS.length] : undefined}
                   fillOpacity={type === 'area' ? 0.3 : undefined}
@@ -159,7 +201,7 @@ function ChartRenderer({
 
       case 'pie':
         const pieData = data.slice(0, 8).map((d, i) => ({
-          name: d[xCol] || `Item ${i + 1}`,
+          name: d.label || `Item ${i + 1}`,
           value: d[numericCols[0]] || 0,
         }));
         return (
@@ -172,7 +214,7 @@ function ChartRenderer({
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label
+                label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
               >
                 {pieData.map((_, index) => (
                   <Cell
@@ -181,7 +223,7 @@ function ChartRenderer({
                   />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value: unknown) => [Number(value).toLocaleString(), 'Value']} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -194,8 +236,8 @@ function ChartRenderer({
           <ResponsiveContainer width="100%" height={320}>
             <ScatterChart>
               <CartesianGrid />
-              <XAxis dataKey={xNumeric} name={xNumeric} tick={{ fontSize: 12 }} />
-              <YAxis dataKey={yNumeric} name={yNumeric} tick={{ fontSize: 12 }} />
+              <XAxis dataKey={xNumeric} name={xNumeric.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} tick={{ fontSize: 12 }} />
+              <YAxis dataKey={yNumeric} name={yNumeric.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} tick={{ fontSize: 12 }} />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} />
               <Scatter data={data} fill={COLORS[0]} />
             </ScatterChart>

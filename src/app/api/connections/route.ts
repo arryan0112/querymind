@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { appPool } from '@/lib/db/app-pool';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.username) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
         { status: 401 }
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const userResult = await appPool.query(
       'SELECT id FROM users WHERE username = $1',
-      [session.user.email]
+      [session.user.username]
     );
 
     if (userResult.rowCount === 0) {
