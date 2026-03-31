@@ -14,12 +14,17 @@ import {
   MenuIcon,
   XIcon,
   SettingsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PanelLeftCloseIcon,
+  PanelLeftIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useAppStore } from '@/store/app-store';
 import { OnboardingModal } from '@/components/OnboardingModal';
+import { SchemaExplorer } from '@/components/SchemaExplorer';
 
 const navItems = [
   { href: '/chat', label: 'Chat', icon: MessageSquareIcon },
@@ -32,7 +37,7 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-  const { connectionId, schemaAnalysis } = useAppStore();
+  const { connectionId, schemaAnalysis, schemaPanelOpen, toggleSchemaPanel } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -41,8 +46,21 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
 
   return (
     <>
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex items-center justify-between">
         {!collapsed && <h1 className="text-xl font-bold">QueryMind</h1>}
+        {schemaAnalysis && (
+          <button
+            onClick={toggleSchemaPanel}
+            className="p-1.5 hover:bg-accent rounded-lg"
+            title={schemaPanelOpen ? 'Hide Schema' : 'Show Schema'}
+          >
+            {schemaPanelOpen ? (
+              <PanelLeftCloseIcon className="size-4" />
+            ) : (
+              <PanelLeftIcon className="size-4" />
+            )}
+          </button>
+        )}
       </div>
 
       <nav className={`flex-1 p-4 ${collapsed ? 'px-2' : ''} space-y-1`}>
@@ -128,7 +146,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { status } = useSession();
-  const { llmConfig, connectionId } = useAppStore();
+  const { llmConfig, connectionId, schemaPanelOpen, schemaAnalysis } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -158,6 +176,13 @@ export default function AppLayout({
       <aside className={`hidden md:flex border-r bg-card flex-col ${sidebarCollapsed ? 'w-16' : 'w-60'}`}>
         <SidebarContent collapsed={sidebarCollapsed} />
       </aside>
+
+      {/* Schema Panel - collapsible on right of sidebar */}
+      {schemaPanelOpen && schemaAnalysis && (
+        <aside className="hidden md:block w-72 border-r bg-card overflow-y-auto">
+          <SchemaExplorer />
+        </aside>
+      )}
 
       {/* Mobile sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>

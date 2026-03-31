@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/store/app-store';
 import { LLMConfigModal } from '@/components/LLMConfigModal';
-import { SchemaExplorer } from '@/components/SchemaExplorer';
 import { ChatContainer } from '@/components/Chat/ChatContainer';
 import { DatabaseIcon, Loader2Icon } from 'lucide-react';
 
@@ -122,39 +121,8 @@ export default function ChatPage() {
     );
   }
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
-    <div className="flex-1 flex overflow-hidden relative">
-      {/* Toggle Button for Sidebar */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 bg-primary text-primary-foreground p-2 rounded-r-lg shadow-lg hover:bg-primary/90 transition-all"
-        style={{ left: sidebarOpen ? '272px' : '0px' }}
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-          style={{ transform: sidebarOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}
-        >
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
-
-      {/* Schema Sidebar */}
-      <aside 
-        className={`w-72 border-r bg-card fixed left-0 top-0 h-full z-20 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <SchemaExplorer />
-      </aside>
-
+    <div className="flex-1 flex overflow-hidden">
       {/* Main Chat Area - Centered */}
       <div className="flex-1 flex flex-col w-full max-w-5xl mx-auto">
         <ChatContainer

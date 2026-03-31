@@ -16,6 +16,9 @@ interface AppState {
   // Dashboard
   activeDashboardId: string | null;
 
+  // UI
+  schemaPanelOpen: boolean;
+
   // Actions
   setConnection: (connectionId: string, schema: SchemaAnalysis) => void;
   clearConnection: () => void;
@@ -24,6 +27,7 @@ interface AppState {
   addMessage: (message: ConversationMessage) => void;
   clearConversation: () => void;
   setActiveDashboard: (id: string | null) => void;
+  toggleSchemaPanel: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -34,6 +38,7 @@ export const useAppStore = create<AppState>()(
       llmConfig: null,
       conversationHistory: [],
       activeDashboardId: null,
+      schemaPanelOpen: true,
 
       setConnection: (connectionId, schemaAnalysis) =>
         set({ connectionId, schemaAnalysis }),
@@ -53,6 +58,8 @@ export const useAppStore = create<AppState>()(
       clearConversation: () => set({ conversationHistory: [] }),
 
       setActiveDashboard: (id) => set({ activeDashboardId: id }),
+
+      toggleSchemaPanel: () => set((state) => ({ schemaPanelOpen: !state.schemaPanelOpen })),
     }),
     {
       name: 'querymind-storage',
